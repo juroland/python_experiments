@@ -9,7 +9,7 @@ class ChessBoard:
         self.right_border = Border()
         self.top_border = Border()
         self.bottom_border = Border()
-        self.board = [[self.top_border for i in range(12)]]
+        self.board = [[self.top_border] * 12]
         for i in range(1, 9):
             i_color = i % 2
             row = [self.left_border]
@@ -19,7 +19,7 @@ class ChessBoard:
                 i_color = (i_color + 1) % 2
             row.append(self.right_border)
             self.board.append(row)
-        self.board.append([self.bottom_border for i in range(12)])
+        self.board.append([self.bottom_border] * 12)
 
         for i in range(1, 9):
             for j in range(1, 9):
@@ -161,10 +161,10 @@ class SafeSquare(Square):
 
     def draw(self, context, canvas):
         x, y = self.position
-        x2 = x * 100
-        y2 = y * 100
-        x1 = x2 - 100
-        y1 = y2 - 100
+        x2 = x * 50
+        y2 = y * 50
+        x1 = x2 - 50
+        y1 = y2 - 50
         canvas.create_rectangle(x1, y1, x2, y2, fill=self.color)
         self.piece.draw(canvas, (x1, y1, x2, y2))
 
@@ -180,10 +180,10 @@ class ThreatenedSquare(Square):
 
     def draw(self, canvas):
         x, y = self.position
-        x2 = x * 100
-        y2 = y * 100
-        x1 = x2 - 100
-        y1 = y2 - 100
+        x2 = x * 50
+        y2 = y * 50
+        x1 = x2 - 50
+        y1 = y2 - 50
         canvas.create_rectangle(x1, y1, x2, y2, fill=self.color)
         self.piece.draw(canvas, (x1, y1, x2, y2))
 
@@ -197,14 +197,14 @@ class Piece:
 class Queen:
     def draw(self, canvas, square):
         x1, y1, x2, y2 = square
-        canvas.create_oval(x1 + 25, y1 + 25, x2 - 25, y2 - 25, fill="red")
+        canvas.create_oval(x1 + 12.5, y1 + 12.5, x2 - 12.5, y2 - 12.5, fill="red")
 
 
 if __name__ == '__main__':
     master = tkinter.Tk()
     canvas = tkinter.Canvas(master,
-                            width=800,
-                            height=800)
+                            width=400,
+                            height=400)
     board = ChessBoard()
     safe_squares = board.safe_squares(1)
     if safe_squares:
