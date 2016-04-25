@@ -182,20 +182,42 @@ class Queen:
         canvas.create_oval(x1 + 12.5, y1 + 12.5, x2 - 12.5, y2 - 12.5, fill="red")
 
 
+class Backtrack:
+    def __init__(self, canvas, board):
+        self.canvas = canvas
+        self.board = board
+        self.queen_index = 1
+        squares = board.safe_squares(1)
+        square = squares.pop()
+        square.place_piece(Queen())
+        self.board.draw(canvas)
+        self.stack = [(1, square, squares)]
+
+    def step(self):
+        queen_index, squares, safe_squares = self.stack[-1]
+        if queen_index <= 8:
+            if safe_squares:
+                square = safe_squares[-1]
+                square.place_piece(Queen())
+                self.board.draw(canvas)
+                self.stack.append((queen_index + 1, square, board.safe_squares(queen_index + 1)))
+            else:
+                self.stack.pop()
+                
+
 if __name__ == '__main__':
     master = tkinter.Tk()
     canvas = tkinter.Canvas(master,
                             width=400,
                             height=400)
     board = ChessBoard()
-    safe_squares = board.safe_squares(1)
-    if safe_squares:
-        random.seed()
-        square = random.choice(safe_squares)
-        square.place_piece(Queen())
-    safe_squares = board.safe_squares(2)
-    square = random.choice(safe_squares)
-    square.place_piece(Queen())
-    board.draw(canvas)
+    backtrack = Backtrack(canvas, board)
     canvas.pack()
+
+    step_time = 400
+    def task():
+        backtrack.step()
+        master.after(step_time, task)
+
+    master.after(step_time, task)
     tkinter.mainloop()
