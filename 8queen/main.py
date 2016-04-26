@@ -1,34 +1,38 @@
 import tkinter
 import random
+import math
 
 class ChessBoard:
-    def __init__(self):
+    def __init__(self, width):
         self.queens = []
         colors = ("black", "white")
-        self.left_border = Border()
-        self.right_border = Border()
-        self.top_border = Border()
-        self.bottom_border = Border()
+        threatened_colors = ("red4", "red2")
+        self.border = Border()
 
-        self.board = [[self.top_border] * 12]
+        self.board = [[self.border] * 12]
         for i in range(1, 9):
             i_color = i % 2
-            row = [self.left_border]
+            row = [self.border]
             for j in range(1, 9):
-                square = Square((j, i), colors[i_color])
+                square = Square((j, i), colors[i_color],
+                                threatened_colors[i_color], width/8)
                 row.append(square)
                 i_color = (i_color + 1) % 2
-            row.append(self.right_border)
+            row.append(self.border)
             self.board.append(row)
-        self.board.append([self.bottom_border] * 12)
+        self.board.append([self.border] * 12)
 
         for i in range(1, 9):
             for j in range(1, 9):
                 square = self.board[i][j]
-                square.set_right(self.board[i][j+1])
-                square.set_down(self.board[i+1][j])
-                square.set_downright(self.board[i+1][j+1])
-                square.set_downleft(self.board[i+1][j-1])
+                square.set_neighbor("right", self.board[i][j+1])
+                square.set_neighbor("left", self.board[i][j-1])
+                square.set_neighbor("down", self.board[i+1][j])
+                square.set_neighbor("up", self.board[i-1][j])
+                square.set_neighbor("downright", self.board[i+1][j+1])
+                square.set_neighbor("upright", self.board[i-1][j-1])
+                square.set_neighbor("downleft", self.board[i+1][j-1])
+                square.set_neighbor("upleft", self.board[i+1][j+1])
 
     def safe_squares(self, row):
         return self.board[row][1].safe_squares_right()
@@ -40,22 +44,9 @@ class ChessBoard:
 
 
 class Border:
-    #def threaten_upleft_diagonal(self): pass
-    def threaten_downleft(self): pass
-    #def threaten_upright(self): pass
-    def threaten_downright(self): pass
-    #def threaten_left(self): pass
-    def threaten_right(self): pass
-    #def threaten_up(self): pass
-    def threaten_down(self): pass
-    #def make_safe_upleft_diagonal(self): pass
-    def make_safe_downleft(self): pass
-    #def make_safe_upright(self): pass
-    def make_safe_downright(self): pass
-    #def make_safe_left(self): pass
-    def make_safe_right(self): pass
-    #def make_safe_up(self): pass
-    def make_safe_down(self): pass
+    def threaten(self, direction): pass
+
+    def make_safe(self, direction): pass
 
     def safe_squares_right(self):
         return []
@@ -64,113 +55,92 @@ class Border:
 
 
 class Square:
-    def __init__(self, position, color):
+    directions = ["left", "right", "up", "down", "upleft", "upright",
+                  "downleft", "downright"]
+    def __init__(self, position, color, threatened_color, width):
         self.state = SafeSquare()
         self.position = position
         self.color = color
+        self.threatened_color = threatened_color
         self.piece = Piece()
+        self.width = width
 
     def set_state(self, state):
         self.state = state
 
     def draw(self, canvas):
-        self.state.draw(self, canvas)
+        self.state.draw(self, canvas, self.width)
 
     def safe_squares_right(self):
         return self.state.safe_squares_right(self)
 
-    def threaten_downleft(self):
-        self.state.threaten_downleft(self)
-        self.downleft.threaten_downleft()
+    def threaten(self, direction):
+        self.state.threaten(self)
+        getattr(self, direction).threaten(direction)
 
-    def threaten_downright(self):
-        self.state.threaten_downright(self)
-        self.downright.threaten_downright()
+    def make_safe(self, direction):
+        self.state.make_safe(self)
+        getattr(self, direction).make_safe(direction)
 
-    def threaten_down(self):
-        self.state.threaten_down(self)
-        self.down.threaten_down()
+    def set_neighbor(self, direction, square):
+        setattr(self, direction, square)
 
-    def make_safe_downright(self):
-        self.state.make_safe_downright(self)
-        self.downright.make_safe_downright()
-
-    def make_safe_downleft(self):
-        self.state.make_safe_downleft(self)
-        self.downleft.make_safe_downleft()
-
-    def make_safe_down(self):
-        self.state.make_safe_down(self)
-        self.down.make_safe_down()
-
-    def set_right(self, square):
-        self.right = square
-
-    def set_down(self, square):
-        self.down = square
-
-    def set_downright(self, square):
-        self.downright = square
-
-    def set_downleft(self, square):
-        self.downleft = square
-        
     def place_piece(self, piece):
         self.piece = piece
-        self.downright.threaten_downright()
-        self.downleft.threaten_downleft()
-        self.down.threaten_down()
+        for direction in Square.directions:
+            getattr(self, direction).threaten(direction)
 
     def take_piece(self):
         piece = self.piece
         self.piece = Piece()
+        for direction in Square.directions:
+            getattr(self, direction).make_safe(direction)
         return piece
-        
-class SquareState:
-    def threaten_downright(self, context):
-        context.set_state(ThreatenedSquare())
 
-    def threaten_downleft(self, context):
-        context.set_state(ThreatenedSquare())
 
-    def threaten_down(self, context):
-        context.set_state(ThreatenedSquare())
-
-    def make_safe_downright(self, context):
-        context.set_state(SafeSquare())
-
-    def make_safe_downleft(self, context):
-        context.set_state(SafeSquare())
-
-    def make_safe_down(self, context):
-        context.set_state(SafeSquare())
-
-class SafeSquare(SquareState):
-    def draw(self, context, canvas):
+class SafeSquare:
+    def draw(self, context, canvas, width):
         x, y = context.position
-        x2 = x * 50
-        y2 = y * 50
-        x1 = x2 - 50
-        y1 = y2 - 50
+        x2 = x * width
+        y2 = y * width
+        x1 = x2 - width
+        y1 = y2 - width
         canvas.create_rectangle(x1, y1, x2, y2, fill=context.color)
         context.piece.draw(canvas, (x1, y1, x2, y2))
 
     def safe_squares_right(self, context):
         return [context] + context.right.safe_squares_right()
 
+    def threaten(self, context):
+        context.set_state(ThreatenedSquare())
 
-class ThreatenedSquare(SquareState):
-    def draw(self, context, canvas):
+    def make_safe(self, context): pass
+
+
+class ThreatenedSquare:
+    def __init__(self):
+        self.n_threat = 1
+
+    def draw(self, context, canvas, width):
         x, y = context.position
-        x2 = x * 50
-        y2 = y * 50
-        x1 = x2 - 50
-        y1 = y2 - 50
-        canvas.create_rectangle(x1, y1, x2, y2, fill="gray")
+        x2 = x * width
+        y2 = y * width
+        x1 = x2 - width
+        y1 = y2 - width
+        canvas.create_rectangle(x1, y1, x2, y2, fill=context.threatened_color)
         context.piece.draw(canvas, (x1, y1, x2, y2))
 
     def safe_squares_right(self, context):
         return context.right.safe_squares_right()
+
+    def threaten(self, context):
+        self.n_threat = self.n_threat + 1
+
+    def make_safe(self, context):
+        self.n_threat = self.n_threat - 1
+        if self.n_threat == 0:
+            context.set_state(SafeSquare())
+
 
 class Piece:
     def draw(self, canvas, square): pass
@@ -179,7 +149,8 @@ class Piece:
 class Queen:
     def draw(self, canvas, square):
         x1, y1, x2, y2 = square
-        canvas.create_oval(x1 + 12.5, y1 + 12.5, x2 - 12.5, y2 - 12.5, fill="red")
+        delta = math.fabs(x1 - x2)/4
+        canvas.create_oval(x1 + delta, y1 + delta, x2 - delta, y2 - delta, fill="red")
 
 
 class Backtrack:
@@ -187,34 +158,37 @@ class Backtrack:
         self.canvas = canvas
         self.board = board
         self.queen_index = 1
-        squares = board.safe_squares(1)
-        square = squares.pop()
-        square.place_piece(Queen())
+        self.safe_squares = self.board.safe_squares(self.queen_index)
         self.board.draw(canvas)
-        self.stack = [(1, square, squares)]
+        self.stack = []
 
     def step(self):
-        queen_index, squares, safe_squares = self.stack[-1]
-        if queen_index <= 8:
-            if safe_squares:
-                square = safe_squares[-1]
-                square.place_piece(Queen())
-                self.board.draw(canvas)
-                self.stack.append((queen_index + 1, square, board.safe_squares(queen_index + 1)))
-            else:
-                self.stack.pop()
-                
+        if self.queen_index == 9:
+            return
+        if self.safe_squares:
+            square = self.safe_squares.pop()
+            self.stack.append((square, self.safe_squares))
+            square.place_piece(Queen())
+            self.queen_index = self.queen_index + 1
+            self.safe_squares = self.board.safe_squares(self.queen_index)
+        elif self.stack:
+            square, self.safe_squares = self.stack.pop()
+            square.take_piece()
+            self.queen_index = self.queen_index - 1
+        self.board.draw(canvas)
+
 
 if __name__ == '__main__':
     master = tkinter.Tk()
+    size = 800
     canvas = tkinter.Canvas(master,
-                            width=400,
-                            height=400)
-    board = ChessBoard()
+                            width=size,
+                            height=size)
+    board = ChessBoard(width=size)
     backtrack = Backtrack(canvas, board)
     canvas.pack()
 
-    step_time = 400
+    step_time = 500
     def task():
         backtrack.step()
         master.after(step_time, task)
